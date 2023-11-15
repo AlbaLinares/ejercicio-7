@@ -17,32 +17,36 @@ Construiremos un gráfico para controlar la calidad del zumo producido durante 1
 
 Para realizar tal gráfico, debemos calcular la media y la matriz de covarianzas de $X$. Estos cálculos nos serviran para posteriormente construir un estadístico que cuantifique y analice la variabilidad de nuestros productos, con el fin de tomar decisiones sobre la calidad de ellos.
 
-Calcularemos media y matriz de covarianzas S de la primera extracción 
+Calcularemos media y matriz de covarianzas S de la primera extracción
 
 ```{r}
 X<-read.table("tabla_3_2.txt", header=TRUE)
+n = nrow(X)
 Media <- colMeans(X)
-S <- cov(X)
+S <- cov(X)*(n-1)/n
+X
+Media
+S
 ```
+
 Guardaremos el número de observaciones y de las variables para más adelante.
 
 ```{r}
-n = nrow(X)
 p = ncol(X)
 Y <-read.table("tabla_3_3.txt", header=TRUE)
-
+Y
 ```
 
 La distribución de Hotelling es una extensión de la distribución t de Student para el caso multivariante. Como nuestro objetivo es analizar la variabilidad simultánea de múltiples variables (la concentación de 11 aminoácidos) y realizar comparaciones entre las medias de estas variables usamos la distribución de Hotelling.
 
 Por la primera propiedad de la distribución de Hotelling tenemos que si $X \sim N_p(\overline{X}, \Sigma)$ independiente de $nS=\sum_{i=1}^{n}(X_i-\overline{X})(X_i-\overline{X})'$ que es $W_p(\Sigma, n-1)$ entonces $T^2(i) = (n-1)(y_i-\overline{X})'\frac{S^{-1}}{n}(y_i-\overline{X}) \sim T^2(p,n-1)$.
 
-Ahora sí, construyamos el estadístico $T^2(i) = \frac{n}{n+1}(y_i-\overline{x})'S^{-1}(y_i-\overline{x})$.
+Ahora sí, construyamos el estadístico $T^2(i) = \frac{n-1}{n}(y_i-\overline{x})'S^{-1}(y_i-\overline{x})$.
 
 ```{r}
 T2_i = c(0,0,0,0,0,0,0,0,0,0,0)
 for (i in 1:10){
-  T2_i[i] <- n/(n+1)*(data.matrix(Y[i,-1])-Media) %*% solve(S) %*% t(data.matrix(Y[i,-1])-Media)}
+  T2_i[i] <- (n-1)/n*(data.matrix(Y[i,-1])-Media) %*% solve(S) %*% t(data.matrix(Y[i,-1])-Media)}
 ```
 
 Notemos que el estadístico debería seguir una $T^2(p,n-1)$ si la distribución de $y_i$ es la misma que la de nuestro piloto $X$.
@@ -73,6 +77,3 @@ legend("topleft", legend = c("T^2(i)", paste("LC =", LC)),
 ```
 
 Por lo tanto, si fijamos el nivel de significación a $\alpha = 0.05$, entonces el proceso de fabricación debe pararse el día 10, debido a que es el primer día en el que la observación se aleja de la región de control.
-
-
-
