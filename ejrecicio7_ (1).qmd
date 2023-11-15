@@ -1,0 +1,78 @@
+---
+title: "Ejercicio 7 Inferencia Multivariante"
+author: "Maria Àngels Llobera y Alba Linares"
+format: html
+editor: visual
+---
+
+En este ejercicio, vamos a realizar un procedimiento de control de calidad de unos zumos.
+
+Para llevarlo a cabo, realizaremos 50 observaciones de muestras de zumo, de las cuales mediremos la concentración de 11 aminoácidos (recordemos que los aminoácidos pueden estar presentes en un zumo de frutas debido a la presencia de pequeñas cantidades de proteínas y otros compuestos nitrogenados, además, su concentración dependerá del tipo de fruta y del procesamiento al que se haya sometido el zumo). Estos datos se encuentran en la "tabla 3.2" y, de ahora en adelante, los llamaremos $X$. Además, si $X$ es el conjunto de realizaciones de estas mediciones, supondremos que $X$ sigue una distribución normal.
+
+A continuación, realizaremos las mismas observaciones día tras día, con el objetivo de detectar algún cambio significativo del proceso. Estos datos se encuentran en la "tabla 3.3" y llamaremos $Y$ al conjunto de observaciones.
+
+Supondremos que estas sucesivas observaciones: $y_i$, con $i \in \{1,...,10\}$, son independientes entre ellas y también de la muestra piloto $X$.
+
+Construiremos un gráfico para controlar la calidad del zumo producido durante 10 días.
+
+Para realizar tal gráfico, debemos calcular la media y la matriz de covarianzas de $X$. Estos cálculos nos serviran para posteriormente construir un estadístico que cuantifique y analice la variabilidad de nuestros productos, con el fin de tomar decisiones sobre la calidad de ellos.
+
+Calcularemos media y matriz de covarianzas S de la primera extracción 
+
+```{r}
+X<-read.table("tabla_3_2.txt", header=TRUE)
+Media <- colMeans(X)
+S <- cov(X)
+```
+Guardaremos el número de observaciones y de las variables para más adelante.
+
+```{r}
+n = nrow(X)
+p = ncol(X)
+Y <-read.table("tabla_3_3.txt", header=TRUE)
+
+```
+
+La distribución de Hotelling es una extensión de la distribución t de Student para el caso multivariante. Como nuestro objetivo es analizar la variabilidad simultánea de múltiples variables (la concentación de 11 aminoácidos) y realizar comparaciones entre las medias de estas variables usamos la distribución de Hotelling.
+
+Por la primera propiedad de la distribución de Hotelling tenemos que si $X \sim N_p(\overline{X}, \Sigma)$ independiente de $nS=\sum_{i=1}^{n}(X_i-\overline{X})(X_i-\overline{X})'$ que es $W_p(\Sigma, n-1)$ entonces $T^2(i) = (n-1)(y_i-\overline{X})'\frac{S^{-1}}{n}(y_i-\overline{X}) \sim T^2(p,n-1)$.
+
+Ahora sí, construyamos el estadístico $T^2(i) = \frac{n}{n+1}(y_i-\overline{x})'S^{-1}(y_i-\overline{x})$.
+
+```{r}
+T2_i = c(0,0,0,0,0,0,0,0,0,0,0)
+for (i in 1:10){
+  T2_i[i] <- n/(n+1)*(data.matrix(Y[i,-1])-Media) %*% solve(S) %*% t(data.matrix(Y[i,-1])-Media)}
+```
+
+Notemos que el estadístico debería seguir una $T^2(p,n-1)$ si la distribución de $y_i$ es la misma que la de nuestro piloto $X$.
+
+Estableceremos un límite de control $LC = \frac{(n-1)p}{n-p}F^{\alpha}(p,n-p)$, con $\alpha$ cierto nivel de significación fijado. En nuestro caso, usaremos $\alpha = 0.05$. Calculemos, pues, el límite de control:
+
+```{r}
+alpha = 0.05
+LC = p*(n-1)/(n-p) * qf(alpha, p, n-p, lower.tail = FALSE)
+```
+
+En último lugar, representaremos secuencialmente los valores de $T^2(i)$ en un gráfico donde además pintaremos el límite de control:
+
+```{r,echo = FALSE}
+# creamos un vector de índices 
+i <- seq_along(T2_i)
+
+# creamos el gráfico de dispersión con líneas
+plot(i, T2_i, type = "b", pch = 16, col = "lightgreen", ylim = c(0, max(T2_i) + 1), 
+     xlab = "i", ylab = "T^2(i)", main = "Gráfico de T^2(i) con LC")
+
+# Agregar la línea del límite de control
+abline(h = LC, col = "red", lty = 2)
+
+# Agregar una leyenda
+legend("topleft", legend = c("T^2(i)", paste("LC =", LC)), 
+       col = c("lightgreen", "red"), pch = c(16, NA), lty = c(NA, 2))
+```
+
+Por lo tanto, si fijamos el nivel de significación a $\alpha = 0.05$, entonces el proceso de fabricación debe pararse el día 10, debido a que es el primer día en el que la observación se aleja de la región de control.
+
+
+
